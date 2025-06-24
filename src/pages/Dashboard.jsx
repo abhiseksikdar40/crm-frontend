@@ -15,7 +15,7 @@ export default function Dashboard() {
 
   const lead = data || [];
   const [currentPage, setCurrentPage] = useState(1);
-  const leadsPerPage = 10;
+  const leadsPerPage = 8;
   const totalPages = Math.ceil(lead.length / leadsPerPage);
 
   const handlePageClick = (page) => {

@@ -15,7 +15,7 @@ export default function Dashboard() {
 
   const lead = data || [];
   const [currentPage, setCurrentPage] = useState(1);
-  const leadsPerPage = 8;
+  const leadsPerPage = 6;
   const totalPages = Math.ceil(lead.length / leadsPerPage);
 
   const handlePageClick = (page) => {
@@ -68,11 +68,11 @@ export default function Dashboard() {
                 <div className="spinner-border text-success"></div>
                 <span className='px-2'>Loading...</span>
             </div>
-        ):(displayedLeads.filter((lead) => lead.leadstatus !== "Closed-Won" && lead.leadstatus !== "Closed-Lost").map((lead) => (
+        ):(displayedLeads.map((lead) => (
             <li key={lead.leadid}>
               <span>{lead.fullname}</span>
               <span>{lead.leadsource}</span>
-              <span>{lead.salesagent || lead.salseagent}</span>
+              <span>{lead.salesagent?.fullname || "N/A"}</span>
               <span>{lead.priority}</span>
               <span
                 className={`status-tab ${
@@ -120,15 +120,6 @@ export default function Dashboard() {
       {showModal && (
   <AddLead onClose={handleCloseModal} setCreatedLeadId={setCreatedLeadId} />
 )}
-
-{createdLeadId && !showModal && (
-  <SuccessPopup
-    message={`Lead created successfully with ID: ${createdLeadId}`}
-    onClose={() => setCreatedLeadId(null)}
-  />
-)}
-
-
-    </div>
+ </div>
   );
 }

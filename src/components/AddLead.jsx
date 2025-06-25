@@ -16,6 +16,7 @@ export default function AddLead({ onClose, setCreatedLeadId }) {
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [successId, setSuccessId] = useState("");
+  const [btnLoading, setBtnLoading] = useState(false);
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -34,6 +35,7 @@ export default function AddLead({ onClose, setCreatedLeadId }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setBtnLoading(true);
     const result = await addLead(newLead);
     const created = result?.lead;
     if (created?.leadid) {
@@ -136,13 +138,13 @@ export default function AddLead({ onClose, setCreatedLeadId }) {
             <label><input type="checkbox" value="High-Value" onChange={handleCheckbox} checked={newLead.tags.includes("High-Value")} /> High-Value</label>
             <label><input type="checkbox" value="Follow-Up" onChange={handleCheckbox} checked={newLead.tags.includes("Follow-Up")} /> Follow-Up</label>
           </div>
-              <button type="submit" className="submit-btn">Add Lead</button>
+              <button type="submit" className="submit-btn"  disabled={btnLoading}>{btnLoading ? "Adding Lead..." : "Add Lead"}</button>
             </form>
           </>
         ) : (
           <div className="success-message">
             <p>✅ Lead created successfully!</p>
-            <p>Lead ID: <strong>{successId}</strong></p>
+            <p>Customer ID: <strong>{successId}</strong></p>
             <button className="close-btn mt-3" onClick={onClose}>Close</button>
           </div>
         )}

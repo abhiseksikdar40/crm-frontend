@@ -674,8 +674,8 @@ body {
 
 .comment-box {
   position: absolute;
-  bottom: -720px;
-  left: 150px;
+  bottom: -664px;
+  left: 140px;
   background-color: #f0f9fc;
   padding: 20px;
   border: 2px solid #cce7f0;
@@ -1092,7 +1092,7 @@ body {
 .report-box {
   flex: 1 1 45%;
   min-width: 500px;
-  height: 350px;
+  height: 310px;
   padding: 30px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);

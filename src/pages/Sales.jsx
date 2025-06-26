@@ -1,25 +1,10 @@
 import { useState, useEffect, useRef } from "react";
+import { useCrmContext, useFetch } from "../context/CRMContext";
 
 export default function Sales() {
-  const STATUSES = ["Closed", "New", "Contacted", "Qualified", "Proposal Sent"];
-
-  const initialLeads = [
-  { id: 1, name: "Alice Johnson", status: "New", agent: "John", country: "USA", phone: "+1 202-555-0101" },
-  { id: 2, name: "Bob Smith", status: "Contacted", agent: "Jane", country: "Canada", phone: "+1 416-555-0123" },
-  { id: 3, name: "Charlie Liu", status: "Qualified", agent: "Sara", country: "UK", phone: "+44 20 7946 0030" },
-  { id: 4, name: "David Kim", status: "New", agent: "Michael", country: "Australia", phone: "+61 2 9374 4000" },
-  { id: 5, name: "Eva Müller", status: "Proposal Sent", agent: "John", country: "Germany", phone: "+49 30 901820" },
-  { id: 6, name: "Fatima Khan", status: "New", agent: "Rob", country: "India", phone: "+91 98765 43210" },
-  { id: 7, name: "George Okoro", status: "Contacted", agent: "Amara", country: "Nigeria", phone: "+234 803 123 4567" },
-  { id: 8, name: "Hiroshi Tanaka", status: "New", agent: "Yuki", country: "Japan", phone: "+81 3-1234-5678" },
-  { id: 9, name: "Isabella Rossi", status: "New", agent: "Marco", country: "Italy", phone: "+39 06 12345678" },
-  { id: 10, name: "Jin Woo", status: "New", agent: "Soojin", country: "South Korea", phone: "+82 10-1234-5678" },
-  { id: 11, name: "Karen Lopez", status: "New", agent: "Carlos", country: "Mexico", phone: "+52 55 1234 5678" },
-  { id: 12, name: "Liam O'Connor", status: "New", agent: "Patrick", country: "Ireland", phone: "+353 1 123 4567" },
-  { id: 13, name: "Maya Singh", status: "New", agent: "Arjun", country: "India", phone: "+91 98456 78901" },
-  { id: 14, name: "Nina Petrov", status: "New", agent: "Oleg", country: "Russia", phone: "+7 495 123-4567" },
-];
-
+  const STATUSES = ["Closed-Lost", "New", "Contacted", "Qualified", "Proposal Sent", "Closed-Won"];
+  const { updateLead, } = useCrmContext();
+  const { data: leads } = useFetch("https://crm-backend-sooty-one.vercel.app/v1/leads");
 
   const [pipelineData, setPipelineData] = useState({});
   const [isTrashActive, setIsTrashActive] = useState(false);
@@ -27,12 +12,14 @@ export default function Sales() {
   const dragContainer = useRef();
 
   useEffect(() => {
+    if (!leads || !Array.isArray(leads)) return;
+
     const grouped = {};
     STATUSES.forEach((status) => {
-      grouped[status] = initialLeads.filter((lead) => lead.status === status);
+      grouped[status] = leads.filter((lead) => lead.leadstatus === status);
     });
     setPipelineData(grouped);
-  }, []);
+  }, [leads]);
 
   const handleDragStart = (e, lead, heading) => {
     dragItem.current = lead;
@@ -48,38 +35,61 @@ export default function Sales() {
     e.preventDefault();
   };
 
-  const handleDrop = (e, targetStatus) => {
+  const handleDrop = async (e, targetStatus) => {
     const item = dragItem.current;
     const sourceStatus = dragContainer.current;
 
     if (!item || !sourceStatus || targetStatus === sourceStatus) return;
 
-    setPipelineData((prev) => {
-      const newData = { ...prev };
-      newData[sourceStatus] = newData[sourceStatus].filter((i) => i !== item);
-      newData[targetStatus] = [...newData[targetStatus], item];
-      return newData;
-    });
-  };
+    try {
+      const updated = await updateLead(item._id, {
+        ...item,
+        leadstatus: targetStatus,
+      });
 
-  const handleDropToTrash = () => {
-    const item = dragItem.current;
-    const source = dragContainer.current;
-    if (!item || !source) return;
+      if (!updated) return;
 
-
-    setIsTrashActive(true);
-
-  
-    setTimeout(() => {
       setPipelineData((prev) => {
         const newData = { ...prev };
-        newData[source] = newData[source].filter((i) => i.id !== item.id);
+        newData[sourceStatus] = newData[sourceStatus].filter((i) => i._id !== item._id);
+        newData[targetStatus] = [...newData[targetStatus], { ...item, leadstatus: targetStatus }];
         return newData;
       });
+    } catch (err) {
+      console.error("Failed to update lead status:", err);
+    }
+  };
+
+  const handleDropToTrash = async () => {
+  const item = dragItem.current;
+  const source = dragContainer.current;
+  if (!item || !source) return;
+
+  setIsTrashActive(true);
+
+  try {
+    const updated = await updateLead(item._id, {
+      ...item,
+      leadstatus: "Closed-Lost"
+    });
+
+    if (!updated) return;
+
+    setPipelineData((prev) => {
+      const newData = { ...prev };
+      newData[source] = newData[source].filter((i) => i._id !== item._id);
+      newData["Closed-Lost"] = [...(newData["Closed-Lost"] || []), { ...item, leadstatus: "Closed-Lost" }];
+      return newData;
+    });
+  } catch (err) {
+    console.error("Failed to move to Closed-Lost:", err);
+  } finally {
+    setTimeout(() => {
       setIsTrashActive(false);
     }, 2500);
-  };
+  }
+};
+
 
   return (
     <div className="sales-container">
@@ -97,7 +107,7 @@ export default function Sales() {
         </div>
 
         <div className="status-grid">
-          {STATUSES.filter((s) => s !== "Closed").map((status) => (
+          {STATUSES.filter((s) => s !== "Closed-Lost").map((status) => (
             <div
               key={status}
               className="status-heading"
@@ -107,14 +117,14 @@ export default function Sales() {
               <h4>{status}</h4>
               {pipelineData[status]?.map((lead) => (
                 <div
-                  key={lead.id}
+                  key={lead._id}
                   className="leads-div"
                   draggable
                   onDragStart={(e) => handleDragStart(e, lead, status)}
                   onDragEnd={handleDragEnd}
                 >
-                  <p><strong>Name:</strong> {lead.name}</p>
-                  <p><strong>Agent:</strong> {lead.agent}</p>
+                  <p><strong>Name:</strong> {lead.fullname}</p>
+                  <p><strong>Agent:</strong> {lead.salesagent?.fullname || "Unknown"}</p>
                 </div>
               ))}
             </div>

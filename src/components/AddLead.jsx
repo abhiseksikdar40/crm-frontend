@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useCrmContext } from "../context/CRMContext";
 
-export default function AddLead({ onClose, setCreatedLeadId }) {
+export default function AddLead({ onClose, setCreatedLeadId, onAddLead }) {
   const { agents, addLead } = useCrmContext();
 
   const [newLead, setNewLead] = useState({
@@ -34,27 +34,35 @@ export default function AddLead({ onClose, setCreatedLeadId }) {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setBtnLoading(true);
-    const result = await addLead(newLead);
-    const created = result?.lead;
-    if (created?.leadid) {
-      setCreatedLeadId(created.leadid);
-      setSuccessId(created.leadid);
-      setShowSuccess(true);
-      setNewLead({
-        fullname: "",
-        leadsource: "",
-        salesagent: "",
-        leadstatus: "",
-        priority: "",
-        timetoclose: 0,
-        tags: [],
-      });
-    } else {
-      console.log("Lead not created or missing `leadid` in response.");
-    }
-  };
+  e.preventDefault();
+  setBtnLoading(true);
+
+  const result = await addLead(newLead);
+  const created = result?.lead;
+
+  if (created?.leadid) {
+    setCreatedLeadId(created.leadid);
+    setSuccessId(created.leadid);
+    setShowSuccess(true);
+
+    if (onAddLead) onAddLead();
+
+    setNewLead({
+      fullname: "",
+      leadsource: "",
+      salesagent: "",
+      leadstatus: "",
+      priority: "",
+      timetoclose: 0,
+      tags: [],
+    });
+  } else {
+    console.log("Lead not created or missing `leadid` in response.");
+  }
+
+  setBtnLoading(false);
+};
+
 
   return (
     <div className="modal-overlay">

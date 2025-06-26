@@ -20,19 +20,17 @@ export default function Reports() {
       "Contacted",
       "Qualified",
       "Proposal Sent",
-      "Negotiation",
       "Closed - Won",
       "Closed - Lost",
     ],
     datasets: [
       {
-        data: [23, 17, 10, 6, 4, 25, 12],
+        data: [23, 17, 10, 6, 25, 12],
         backgroundColor: [
           "#2196F3",
           "#03A9F4",
           "#00BCD4",
           "#009688",
-          "#4CAF50",
           "#8BC34A",
           "#F44336",
         ],

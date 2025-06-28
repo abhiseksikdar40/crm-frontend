@@ -1,26 +1,41 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AddAgent from "../components/AddAgent";
 import { useFetch } from "../context/CRMContext";
 
 export default function Agents() {
   const {
     data: agents = [],
-    loading,
-    error,
+    loading: loadingAgents,
+    error: errorAgents,
     refetch
   } = useFetch("https://crm-backend-sooty-one.vercel.app/v1/agents");
 
+  const {
+    data: leads = [],
+    loading: loadingLeads,
+    error: errorLeads
+  } = useFetch("https://crm-backend-sooty-one.vercel.app/v1/leads");
+
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [leadCounts, setLeadCounts] = useState({});
+
+  useEffect(() => {
+    const countMap = {};
+    leads.forEach((lead) => {
+      const agentId = lead.salesagent?._id;
+      if (agentId) {
+        countMap[agentId] = (countMap[agentId] || 0) + 1;
+      }
+    });
+    setLeadCounts(countMap);
+  }, [leads]);
 
   const agentDetailsHandler = (agent) => {
     setSelectedAgent(agent);
   };
 
-  const closeDetailsHandler = () => {
-    setSelectedAgent(null);
-  };
-
+  const closeDetailsHandler = () => setSelectedAgent(null);
   const handleOpenModal = () => setShowModal(true);
   const handleCloseModal = () => setShowModal(false);
 
@@ -29,11 +44,12 @@ export default function Agents() {
       <div className="agents-cards">
         <h2>Agents</h2>
 
-        {/* Show loader or error if applicable */}
-        {loading && <p className="text-success fw-bold text-center">Loading agents...</p>}
-        {error && <p className="text-danger">Error: {error}</p>}
+        {(loadingAgents || loadingLeads) && (
+          <p className="text-success fw-bold text-center">Loading...</p>
+        )}
+        {errorAgents && <p className="text-danger">Error: {errorAgents}</p>}
+        {errorLeads && <p className="text-danger">Error: {errorLeads}</p>}
 
-        {/* Agent list */}
         <ul>
           {agents.map((agent) => (
             <li key={agent._id}>
@@ -50,7 +66,6 @@ export default function Agents() {
           ))}
         </ul>
 
-        {/* Add Agent Modal */}
         <button className="add-agent-btn btn btn-success" onClick={handleOpenModal}>
           Add Agent
         </button>
@@ -62,7 +77,6 @@ export default function Agents() {
           />
         )}
 
-        {/* Selected Agent Detail View */}
         {selectedAgent && (
           <div className="agent-details">
             <div>
@@ -71,7 +85,7 @@ export default function Agents() {
               <p><strong>Name:</strong> {selectedAgent.fullname}</p>
               <p><strong>Email:</strong> {selectedAgent.email}</p>
               <p><strong>Agent ID:</strong> {selectedAgent.agentid}</p>
-              <p><strong>Leads:</strong> {selectedAgent.leads?.length || 0}</p>
+              <p><strong>Leads:</strong> {leadCounts[selectedAgent._id] || 0}</p>
             </div>
           </div>
         )}

@@ -7,9 +7,13 @@ export default function Reports() {
 
   const statuses = ["New", "Contacted", "Qualified", "Proposal Sent", "Closed-Won", "Closed-Lost"];
 
-  const pipelineCount = leads.filter(l => l.leadstatus != "Closed-Won" && l.leadstatus != "Closed-Lost").length;
-  const closedCount = leads.filter(
+  // Fixed logic
+  const pipelineCount = leads.filter(
     l => l.leadstatus !== "Closed-Won" && l.leadstatus !== "Closed-Lost"
+  ).length;
+
+  const closedCount = leads.filter(
+    l => l.leadstatus === "Closed-Won" || l.leadstatus === "Closed-Lost"
   ).length;
 
   const leadStatusCounts = statuses.map(status =>

@@ -1,13 +1,60 @@
 import { Chart as ChartJs } from "chart.js/auto";
 import { Bar, Pie, Doughnut, Line } from "react-chartjs-2";
+import { useFetch } from "../context/CRMContext";
 
 export default function Reports() {
+  const { data: leads = [], loading, error } = useFetch("https://crm-backend-sooty-one.vercel.app/v1/leads");
+
+  const statuses = ["New", "Contacted", "Qualified", "Proposal Sent", "Closed-Won", "Closed-Lost"];
+
+  const pipelineCount = leads.filter(l => l.leadstatus != "Closed-Won" && l.leadstatus != "Closed-Lost").length;
+  const closedCount = leads.filter(
+    l => l.leadstatus !== "Closed-Won" && l.leadstatus !== "Closed-Lost"
+  ).length;
+
+  const leadStatusCounts = statuses.map(status =>
+    leads.filter(l => l.leadstatus === status).length
+  );
+
+  const agents = [...new Set(leads.map(l => l.salesagent?.fullname || "N/A"))];
+
+  const closedLeadsByAgent = agents.map(agent => {
+    const agentLeads = leads.filter(l => (l.salesagent?.fullname || "N/A") === agent);
+    const closedWon = agentLeads.filter(l => l.leadstatus === "Closed-Won").length;
+    const closedLost = agentLeads.filter(l => l.leadstatus === "Closed-Lost").length;
+    return { agent, closedWon, closedLost };
+  });
+
+  const leadsByAgentAndStatus = statuses.map(status => ({
+    label: status,
+    data: agents.map(agent =>
+      leads.filter(
+        l => l.leadstatus === status && (l.salesagent?.fullname || "N/A") === agent
+      ).length
+    ),
+    borderColor: getColorForStatus(status),
+    backgroundColor: getColorForStatus(status),
+    tension: 0.3,
+  }));
+
+  function getColorForStatus(status) {
+    const map = {
+      "New": "#2196F3",
+      "Contacted": "#03A9F4",
+      "Qualified": "#00BCD4",
+      "Proposal Sent": "#009688",
+      "Closed-Won": "#8BC34A",
+      "Closed-Lost": "#F44336",
+    };
+    return map[status] || "#999";
+  }
+
   const closedVsPipelineData = {
     labels: ["Closed", "In Pipeline"],
     datasets: [
       {
         label: "Leads",
-        data: [37, 60],
+        data: [closedCount, pipelineCount],
         backgroundColor: ["#4CAF50", "#FF9800"],
         borderWidth: 1,
       },
@@ -15,106 +62,35 @@ export default function Reports() {
   };
 
   const leadStatusDistributionData = {
-    labels: [
-      "New",
-      "Contacted",
-      "Qualified",
-      "Proposal Sent",
-      "Closed - Won",
-      "Closed - Lost",
-    ],
+    labels: statuses,
     datasets: [
       {
-        data: [23, 17, 10, 6, 25, 12],
-        backgroundColor: [
-          "#2196F3",
-          "#03A9F4",
-          "#00BCD4",
-          "#009688",
-          "#8BC34A",
-          "#F44336",
-        ],
+        data: leadStatusCounts,
+        backgroundColor: statuses.map(getColorForStatus),
         borderWidth: 1,
       },
     ],
   };
 
   const closedLeadsByAgentData = {
-    labels: [
-      "Alice Johnson",
-      "Bob Smith",
-      "Charlie Davis",
-      "John Doe",
-      "Rebeca Scott",
-      "Victor Morris",
-    ],
+    labels: agents,
     datasets: [
       {
-        label: "Closed - Won",
-        data: [10, 7, 8, 10, 12, 11],
+        label: "Closed-Won",
+        data: closedLeadsByAgent.map(a => a.closedWon),
         backgroundColor: "#4CAF50",
       },
       {
-        label: "Closed - Lost",
-        data: [3, 2, 4, 2, 4, 1],
+        label: "Closed-Lost",
+        data: closedLeadsByAgent.map(a => a.closedLost),
         backgroundColor: "#F44336",
       },
     ],
   };
 
   const leadsByStatusLineData = {
-    labels: [
-      "Alice Johnson",
-      "Bob Smith",
-      "Charlie Davis",
-      "John Doe",
-      "Rebeca Scott",
-      "Victor Morris",
-    ],
-    datasets: [
-      {
-        label: "New",
-        data: [5, 3, 4, 6, 2, 5],
-        borderColor: "#42A5F5",
-        backgroundColor: "#42A5F5",
-        tension: 0.3,
-      },
-      {
-        label: "Contacted",
-        data: [4, 5, 3, 4, 3, 2],
-        borderColor: "#66BB6A",
-        backgroundColor: "#66BB6A",
-        tension: 0.3,
-      },
-      {
-        label: "Qualified",
-        data: [2, 1, 3, 2, 2, 3],
-        borderColor: "#FFA726",
-        backgroundColor: "#FFA726",
-        tension: 0.3,
-      },
-      {
-        label: "Proposal Sent",
-        data: [1, 2, 1, 1, 3, 2],
-        borderColor: "#AB47BC",
-        backgroundColor: "#AB47BC",
-        tension: 0.3,
-      },
-      {
-        label: "Closed - Won",
-        data: [10, 7, 8, 6, 5, 9],
-        borderColor: "#4CAF50",
-        backgroundColor: "#4CAF50",
-        tension: 0.3,
-      },
-      {
-        label: "Closed - Lost",
-        data: [3, 2, 4, 2, 1, 3],
-        borderColor: "#F44336",
-        backgroundColor: "#F44336",
-        tension: 0.3,
-      },
-    ],
+    labels: agents,
+    datasets: leadsByAgentAndStatus,
   };
 
   const chartOptions = {
@@ -124,6 +100,9 @@ export default function Reports() {
       legend: { position: "top" },
     },
   };
+
+  if (loading) return <p className="text-center mt-5">Loading reports...</p>;
+  if (error) return <p className="text-danger text-center mt-5">{error}</p>;
 
   return (
     <div className="reports-container">

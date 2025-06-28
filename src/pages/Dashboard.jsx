@@ -7,16 +7,26 @@ export default function Dashboard() {
 
   const [showModal, setShowModal] = useState(false);
   const [createdLeadId, setCreatedLeadId] = useState(null);
+  const [selectedStatus, setSelectedStatus] = useState("All");
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const leadsPerPage = 6;
 
   const handleOpenModal = () => setShowModal(true);
   const handleCloseModal = () => setShowModal(false);
 
-
+  
   const lead = (data || []).filter(l => l.leadstatus !== "Closed-Lost");
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const leadsPerPage = 6;
-  const totalPages = Math.ceil(lead.length / leadsPerPage);
+ 
+  const filteredLeads = selectedStatus === "All"
+    ? lead
+    : lead.filter(l => l.leadstatus === selectedStatus);
+
+
+  const totalPages = Math.ceil(filteredLeads.length / leadsPerPage);
+  const startIndex = (currentPage - 1) * leadsPerPage;
+  const displayedLeads = filteredLeads.slice(startIndex, startIndex + leadsPerPage);
 
   const handlePageClick = (page) => {
     if (page >= 1 && page <= totalPages) {
@@ -24,8 +34,10 @@ export default function Dashboard() {
     }
   };
 
-  const startIndex = (currentPage - 1) * leadsPerPage;
-  const displayedLeads = lead.slice(startIndex, startIndex + leadsPerPage);
+  const filterHandler = (e) => {
+    setSelectedStatus(e.target.value);
+    setCurrentPage(1);
+  };
 
   return (
     <div className="dashboard-container">
@@ -68,11 +80,13 @@ export default function Dashboard() {
         <div className="heading-filters">
           <div className="shorting-leads">
             <label htmlFor="leadStatus">Sort by: </label>
-            <select id="leadStatus">
-              <option value="New">Newest</option>
+            <select id="leadStatus" value={selectedStatus} onChange={filterHandler}>
+              <option value="All">All</option>
+              <option value="New">New</option>
               <option value="Contacted">Contacted</option>
               <option value="Qualified">Qualified</option>
               <option value="Proposal Sent">Proposal Sent</option>
+              <option value="Closed-Won">Closed-Won</option>
             </select>
           </div>
           <button className="create-lead-btn" onClick={handleOpenModal}>Create Lead</button>
@@ -125,7 +139,7 @@ export default function Dashboard() {
         {/* Pagination */}
         <nav className="d-flex justify-content-between align-items-center mt-4">
           <p className="mb-0">
-            Showing {displayedLeads.length} Data Per Page Out of {lead.length} Entries
+            Showing {displayedLeads.length} per page out of {filteredLeads.length} entries
           </p>
           <ul className="pagination mb-0">
             <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
